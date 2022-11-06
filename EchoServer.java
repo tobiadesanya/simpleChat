@@ -75,6 +75,45 @@ public class EchoServer extends AbstractServer
   //Class methods ***************************************************
   
   /**
+   * Implements the hook method called each time a new client connection is
+   * accepted. The default implementation does nothing.
+   * @param client the connection connected to the client.
+   */
+  @Override
+  protected void clientConnected(ConnectionToClient client) {
+	  System.out.println("Welcome new client! Thank you for connecting to the server.");
+	  sendToAllClients("Welcome new client! Thank you for connecting to the server.");
+  }
+  
+  /**
+   * Implements the hook method called each time a client disconnects.
+   * The default implementation does nothing. The method
+   * may be overridden by subclasses but should remains synchronized.
+   *
+   * @param client the connection with the client.
+   */
+  @Override
+  synchronized protected void clientDisconnected(ConnectionToClient client) {
+	  System.out.println("We are sad to see you go. Thank you for connecting!");
+	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
+  }
+  
+  /**
+   * Implements the hook method called each time an exception is thrown in a
+   * ConnectionToClient thread.
+   * The method may be overridden by subclasses but should remains
+   * synchronized.
+   *
+   * @param client the client that raised the exception.
+   * @param Throwable the exception thrown.
+   */
+  synchronized protected void clientException(
+    ConnectionToClient client, Throwable exception) {
+	  System.out.println("We are sad to see you go. Thank you for connecting!");
+	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
+  }
+  
+  /**
    * This method is responsible for the creation of 
    * the server instance (there is no UI in this phase).
    *
