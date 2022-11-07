@@ -3,6 +3,9 @@
 // license found at www.lloseng.com 
 
 
+import java.io.IOException;
+
+import common.ChatIF;
 import ocsf.server.*;
 
 /**
@@ -15,14 +18,21 @@ import ocsf.server.*;
  * @author Paul Holden
  * @version July 2000
  */
-public class EchoServer extends AbstractServer 
-{
+public class EchoServer extends AbstractServer {
   //Class variables *************************************************
   
   /**
    * The default port to listen on.
    */
   final public static int DEFAULT_PORT = 5555;
+  
+//Instance variables *************************************************
+  
+  /**
+   *The interface type variable.  It allows the implementation of 
+   * the display method on the server side.
+   */
+  ChatIF serverUI;
   
   //Constructors ****************************************************
   
@@ -31,9 +41,10 @@ public class EchoServer extends AbstractServer
    *
    * @param port The port number to connect on.
    */
-  public EchoServer(int port) 
+  public EchoServer(int port, ChatIF serverUI) 
   {
     super(port);
+    this.serverUI = serverUI;
   }
 
   
@@ -46,10 +57,129 @@ public class EchoServer extends AbstractServer
    * @param client The connection from which the message originated.
    */
   public void handleMessageFromClient
-    (Object msg, ConnectionToClient client)
-  {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+    (Object msg, ConnectionToClient client) {
+
+	  String message = msg.toString();
+	  
+	  if ( message.startsWith("#") ) {
+		  String[] args = message.split(" ");
+		  if (args.length > 2) {
+			  try {
+				client.sendToClient("Error: Invalid command, please try again.");
+			} catch (IOException e) {
+				serverUI.display("Unable to send message to client");
+			}
+		  } else {
+			  String command = args[0];
+			  String arg = args[1];
+			  
+			  if (command.equals("#login")) {
+				
+				 if (client.getInfo("loginID") == null) {
+					client.setInfo("loginID", arg);
+					
+				} else {
+					try {
+						client.sendToClient("Error: Invalid command. Terminating program."); //FIX
+						close();
+						System.exit(0);
+					} catch (IOException e) {
+						System.exit(0);
+					}
+				}
+			  }
+		  }
+		  
+	  } else {
+		  
+		  if (client.getInfo("loginID") == null) {
+			  try {
+				client.sendToClient("Error: You need to set a loginID.");
+			} catch (IOException e) {
+				serverUI.display("Unable to send message to client");
+			}
+		  } else {
+			  serverUI.display("Message received: " + msg + " from " + client.getInfo("loginID").toString());
+			  this.sendToAllClients( client.getInfo("loginID").toString() + ": " + msg);
+		  }
+	  }
+  }
+  
+  /**
+   * This method handles all data coming from the UI            
+   *
+   * @param message The message from the UI.    
+   */
+  public void handleMessageFromServerUI(String message) {
+	  if ( message.startsWith("#") ) {
+		  String[] args = message.split(" ");
+		  if (args.length > 2) {
+			  serverUI.display("Error: Invalid command, please try again.");
+		  } else {
+		  String command = args[0];
+		  switch (command) {
+			case "#quit": 
+				stopListening();
+				try {
+					this.close();
+				} catch (IOException e1) {
+					System.exit(0);
+				}
+				System.exit(0);
+				break;
+			case "#stop":
+				try {
+					stopListening();
+				} catch (Exception e) {
+					serverUI.display("Error: unable to stop listening for new clients.");
+				}
+				break;
+			case "#close":
+				try {
+					stopListening();
+					close();
+				} catch (Exception e) {
+					serverUI.display("Error: unable to close server.");
+				}
+				break;
+			case "#setport":
+				if (this.isListening() || this.getNumberOfClients() > 0) {
+					serverUI.display("Error: you cannot set the port unless the server is closed.");
+				} else {
+					if (args.length == 1) {
+						serverUI.display("Error: Invalid command.");
+					} else {
+						this.setPort( Integer.parseInt(args[1]) );
+					}
+				}
+				break;
+			case "#start":
+				if (this.isListening()) {
+					serverUI.display("Error: you are already listening for new clients.");
+				} else {
+					try {
+						this.listen();
+					} catch (Exception e) {
+						serverUI.display("Error: unable to start listening for new clients.");
+					}
+				}
+				break;
+			case "#getport":
+				System.out.println( this.getPort() );
+				break;
+			default:
+				serverUI.display("Error: Invalid command, please try again.");
+				break;
+			}
+		  }
+		  
+	  } else {
+	  
+    String completeMsg = "SERVER MSG> " + message;
+    serverUI.display(completeMsg);
+	sendToAllClients(completeMsg);
+	
+	  }
   }
     
   /**
@@ -58,7 +188,7 @@ public class EchoServer extends AbstractServer
    */
   protected void serverStarted()
   {
-    System.out.println
+    serverUI.display
       ("Server listening for connections on port " + getPort());
   }
   
@@ -68,7 +198,7 @@ public class EchoServer extends AbstractServer
    */
   protected void serverStopped()
   {
-    System.out.println
+    serverUI.display
       ("Server has stopped listening for connections.");
   }
   
@@ -81,8 +211,8 @@ public class EchoServer extends AbstractServer
    */
   @Override
   protected void clientConnected(ConnectionToClient client) {
-	  System.out.println("Welcome new client! Thank you for connecting to the server.");
-	  sendToAllClients("Welcome new client! Thank you for connecting to the server.");
+	  serverUI.display("Welcome " + client.getInfo("loginID").toString() +  ". Thank you for connecting to the server.");
+	  sendToAllClients("Welcome " + client.getInfo("loginID").toString() +  ". Thank you for connecting to the server.");
   }
   
   /**
@@ -94,7 +224,7 @@ public class EchoServer extends AbstractServer
    */
   @Override
   synchronized protected void clientDisconnected(ConnectionToClient client) {
-	  System.out.println("We are sad to see you go. Thank you for connecting!");
+	  serverUI.display("We are sad to see you go. Thank you for connecting!");
 	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
   }
   
@@ -107,42 +237,13 @@ public class EchoServer extends AbstractServer
    * @param client the client that raised the exception.
    * @param Throwable the exception thrown.
    */
+  @Override
   synchronized protected void clientException(
     ConnectionToClient client, Throwable exception) {
-	  System.out.println("We are sad to see you go. Thank you for connecting!");
+	  serverUI.display("We are sad to see you go. Thank you for connecting!");
 	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
   }
   
-  /**
-   * This method is responsible for the creation of 
-   * the server instance (there is no UI in this phase).
-   *
-   * @param args[0] The port number to listen on.  Defaults to 5555 
-   *          if no argument is entered.
-   */
-  public static void main(String[] args) 
-  {
-    int port = 0; //Port to listen on
-
-    try
-    {
-      port = Integer.parseInt(args[0]); //Get port from command line
-    }
-    catch(Throwable t)
-    {
-      port = DEFAULT_PORT; //Set port to 5555
-    }
-	
-    EchoServer sv = new EchoServer(port);
-    
-    try 
-    {
-      sv.listen(); //Start listening for connections
-    } 
-    catch (Exception ex) 
-    {
-      System.out.println("ERROR - Could not listen for clients!");
-    }
-  }
+  
 }
 //End of EchoServer class

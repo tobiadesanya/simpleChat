@@ -26,6 +26,7 @@ public class ChatClient extends AbstractClient
    * the display method in the client.
    */
   ChatIF clientUI; 
+  String loginID;
 
   
   //Constructors ****************************************************
@@ -38,12 +39,16 @@ public class ChatClient extends AbstractClient
    * @param clientUI The interface type variable.
    */
   
-  public ChatClient(String host, int port, ChatIF clientUI) 
+  public ChatClient(String loginID, String host, int port, ChatIF clientUI) 
     throws IOException 
   {
     super(host, port); //Call the superclass constructor
+    this.loginID = loginID;
     this.clientUI = clientUI;
     openConnection();
+    
+    sendToServer("#login " + loginID);
+    
   }
 
   
@@ -64,18 +69,77 @@ public class ChatClient extends AbstractClient
    *
    * @param message The message from the UI.    
    */
-  public void handleMessageFromClientUI(String message)
-  {
-    try
-    {
-      sendToServer(message);
-    }
-    catch(IOException e)
-    {
-      clientUI.display
-        ("Could not send message to server.  Terminating client.");
-      quit();
-    }
+  public void handleMessageFromClientUI(String message) {
+	  if ( message.startsWith("#") ) {
+		  String[] args = message.split(" ");
+		  if (args.length > 2) {
+			  System.out.println("Error: Invalid command, please try again.");
+		  } else {
+		  String command = args[0];
+		  switch (command) {
+			case "#quit": 
+				quit();
+				System.exit(0);
+				break;
+			case "#logoff":
+				try {
+					closeConnection();
+				} catch (Exception e) {
+					System.out.println("Error: unable to disconnect from server");
+				}
+				break;
+			case "#sethost":
+				if (isConnected()) {
+					System.out.println("Error: you cannot set the host if you are logged in.");
+				} else {
+					if (args.length == 1) {
+						System.out.println("Error: Invalid command.");
+					} else {
+						this.setHost(args[1]);
+					}
+				}
+				break;
+			case "#setport":
+				if (isConnected()) {
+					System.out.println("Error: you cannot set the port if you are logged in.");
+				} else {
+					
+					if (args.length == 1) {
+						System.out.println("Error: Invalid command.");
+					} else {
+						this.setPort(Integer.parseInt(args[1]));
+					}
+				}
+				break;
+			case "#login":
+				if (isConnected()) {
+					System.out.println("Error: you are already logged in.");
+				} else {
+					try {
+						this.openConnection();
+						sendToServer("#login " + loginID);
+					} catch (Exception e) {
+						System.out.println("Error: unable to connect to server");
+					}
+				}
+				break;
+			case "#gethost":
+				System.out.println( this.getHost() );
+				break;
+			case "#getport":
+				System.out.println( this.getPort() );
+				break;
+			}
+		  }
+	  } else {
+	  
+		  try {
+			  sendToServer(message);
+		  } catch(IOException e) {
+			  clientUI.display("Could not send message to server.  Terminating client.");
+			  quit();
+		  }
+	  }
   }
   
   /**
