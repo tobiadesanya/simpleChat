@@ -93,9 +93,9 @@ public class ChatClient extends AbstractClient
 					System.out.println("Error: you cannot set the host if you are logged in.");
 				} else {
 					if (args.length == 1) {
-						System.out.println("Error: Invalid command.");
+						System.out.println("Error: invalid argument.");
 					} else {
-						this.setHost(args[1]);
+					this.setHost(args[1]);
 					}
 				}
 				break;
@@ -103,11 +103,10 @@ public class ChatClient extends AbstractClient
 				if (isConnected()) {
 					System.out.println("Error: you cannot set the port if you are logged in.");
 				} else {
-					
 					if (args.length == 1) {
-						System.out.println("Error: Invalid command.");
+						System.out.println("Error: invalid argument.");
 					} else {
-						this.setPort(Integer.parseInt(args[1]));
+					this.setPort(Integer.parseInt(args[1]));
 					}
 				}
 				break;

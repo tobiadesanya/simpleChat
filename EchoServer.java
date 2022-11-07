@@ -71,12 +71,14 @@ public class EchoServer extends AbstractServer {
 			}
 		  } else {
 			  String command = args[0];
-			  String arg = args[1];
 			  
 			  if (command.equals("#login")) {
 				
 				 if (client.getInfo("loginID") == null) {
-					client.setInfo("loginID", arg);
+					client.setInfo("loginID", args[1]);
+					System.out.println("Message received: #login " + client.getInfo("loginID") + " from null.");
+					System.out.println("<" + client.getInfo("loginID") + "> has logged in.");
+					sendToAllClients("<" + client.getInfo("loginID") + "> has logged in.");
 					
 				} else {
 					try {
@@ -99,7 +101,7 @@ public class EchoServer extends AbstractServer {
 				serverUI.display("Unable to send message to client");
 			}
 		  } else {
-			  serverUI.display("Message received: " + msg + " from " + client.getInfo("loginID").toString());
+			  serverUI.display("Message received: " + msg + " from <" + client.getInfo("loginID").toString() + ">");
 			  this.sendToAllClients( client.getInfo("loginID").toString() + ": " + msg);
 		  }
 	  }
@@ -147,9 +149,9 @@ public class EchoServer extends AbstractServer {
 					serverUI.display("Error: you cannot set the port unless the server is closed.");
 				} else {
 					if (args.length == 1) {
-						serverUI.display("Error: Invalid command.");
+						serverUI.display("Error: invalid argument.");
 					} else {
-						this.setPort( Integer.parseInt(args[1]) );
+					this.setPort( Integer.parseInt(args[1]) );
 					}
 				}
 				break;
@@ -211,8 +213,8 @@ public class EchoServer extends AbstractServer {
    */
   @Override
   protected void clientConnected(ConnectionToClient client) {
-	  serverUI.display("Welcome " + client.getInfo("loginID").toString() +  ". Thank you for connecting to the server.");
-	  sendToAllClients("Welcome " + client.getInfo("loginID").toString() +  ". Thank you for connecting to the server.");
+	  serverUI.display("A new client has connected to the server.");
+	  sendToAllClients("A new client has connected to the server.");
   }
   
   /**
