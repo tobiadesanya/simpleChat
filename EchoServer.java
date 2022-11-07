@@ -226,8 +226,8 @@ public class EchoServer extends AbstractServer {
    */
   @Override
   synchronized protected void clientDisconnected(ConnectionToClient client) {
-	  serverUI.display("We are sad to see you go. Thank you for connecting!");
-	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
+	  serverUI.display(client.getInfo("loginID").toString() + " has disconnected");
+	  sendToAllClients(client.getInfo("loginID").toString() + " has disconnected");
   }
   
   /**
@@ -242,8 +242,8 @@ public class EchoServer extends AbstractServer {
   @Override
   synchronized protected void clientException(
     ConnectionToClient client, Throwable exception) {
-	  serverUI.display("We are sad to see you go. Thank you for connecting!");
-	  sendToAllClients("We are sad to see you go. Thank you for connecting!");
+	  serverUI.display(client.getInfo("loginID").toString() + " has disconnected");
+	  sendToAllClients(client.getInfo("loginID").toString() + " has disconnected");
   }
   
   
